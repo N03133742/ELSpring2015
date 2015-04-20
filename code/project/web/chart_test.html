@@ -3,21 +3,21 @@
 		<!-- Latest compiled and minified CSS -->
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
 	</head>
-	
+
 	<body>
 		<div class="container">
-			<div class="row"> 
+			<div class="row">
 				<div class="col-md-6" id="line-chart"></div>
 				<div class="col-md-6" id="pie-chart"></div>
 			</div>
 		</div>
-		
-		
+
+
 		<script src="http://code.jquery.com/jquery-1.11.2.min.js"></script>
 		<!-- Latest compiled and minified JavaScript -->
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
 		<script type="text/javascript" src="https://www.google.com/jsapi"></script>
-		
+
 		<script type="text/javascript">
 			// Load the Visualization API and the piechart package.
 			google.load('visualization', '1.0', {'packages':['corechart']});
@@ -57,13 +57,13 @@
 				data.addColumn('number', 'X');
 				data.addColumn('number', 'Y');
 				data.addRows([[1,1],[2,4],[3,9],[4,16],[5,25],[6,36]]);
-				
+
 				// Set chart options
 				var options = {'title':'X square function',
 							   width: 500,
 							   height: 500,
 							   'curveType': 'function'};
-				
+
 				var chart = new google.visualization.LineChart(document.getElementById('line-chart'));
 				chart.draw(data, options);
 			}

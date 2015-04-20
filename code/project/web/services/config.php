@@ -7,3 +7,8 @@ $config->sensorConfig = array();
 //CONFIG TEMP SENSOR
 $config->sensorConfig[1] = new stdClass();
 $config->sensorConfig[1]->readNum = 1;
+
+
+function dbConnect(){
+  return new mysqli("localhost", $config->user, $config->password, $config->db);
+}

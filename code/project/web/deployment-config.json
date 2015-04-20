@@ -1,0 +1,9 @@
+{
+    "type": "sftp",
+    "host": "cs.newpaltz.edu",
+    "username": "fernandi2",
+    "password": "kjch23IV",
+    "port": 22,
+    "remotePath": "/home/fernandi2/WWW/EL2015/",
+    "uploadOnSave": true
+}
