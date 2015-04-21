@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html ng-app="app">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Buoy sensor charts</title>
+
+        <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+
+
+        <script src="http://code.jquery.com/jquery-1.11.2.min.js"></script>
+        <script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+        <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+        <!-- Latest compiled and minified JavaScript -->
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js"></script>
+    </head>
+
+    <body ng-controller="index">
+        <nav class="navbar navbar-inverse">
+            <div class="container-fluid">
+                <!-- Brand and toggle get grouped for better mobile display -->
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" href="#">Bouy dashboard</a>
+                </div>
+
+                <!-- Collect the nav links, forms, and other content for toggling -->
+                <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                    <form class="navbar-form navbar-right">
+                        <select ng-model="rasppi" ng-options="pi.alias for pi in pis" class="form-control">
+                            <option value=""> Choose a raspberry pi </option>
+                        </select>
+                    </form>
+                </div><!-- /.navbar-collapse -->
+            </div><!-- /.container-fluid -->
+        </nav>
+
+        <div class="container-fluid">
+            <div class="panel panel-default col-md-6" ng-repeat="sensor in sensors">
+                <div class="panel-body">
+                    <div id="sensor-chart-{{$index}}" class="chart"></div>
+                </div>
+            </div>
+        </div>
+
+
+
+        <script>
+            var googleApiLoaded = false;
+            var chartCallback = null;
+            var callbackValue = null;
+            var sensorV = null;
+            // Load the Visualization API and the piechart package.
+			google.load('visualization', '1.0', {'packages':['corechart']});
+
+			// Set a callback to run when the Google Visualization API is loaded.
+			google.setOnLoadCallback(function(){
+                googleApiLoaded = true;
+                if(chartCallback != null) chartCallback(callbackValue);
+            });
+
+
+            var app = angular.module('app', []);
+            app.controller('index', function($scope, $http, $timeout){
+                $http.get("http://cs.newpaltz.edu/~fernandi2/EL2015/services/getpis.php").success(function(data){
+                    $scope.pis = data;
+                });
+                $scope.$watch("rasppi", function(newV, oldV){
+                    if(newV != null){
+                        $http.get("http://cs.newpaltz.edu/~fernandi2/EL2015/services/getdata.php?serial="+newV.serial).success(function(data){
+                            $scope.sensors = data;
+                        });
+                    }
+                });
+                $scope.$watch("sensors", function(newV, oldV){
+                    if(newV != null){
+                        sensorV = newV;
+                        //Set the timeout so the charts containers are rendered before the execution
+                        $timeout(function(){
+                            loadCharts(newV);
+                        }, 0);
+                        //loadCharts(newV);
+                    }
+                });
+            });
+
+            function loadCharts(data){
+                if(!(data.constructor === Array))
+                    return;
+                if(!googleApiLoaded){
+                    chartCallback = loadCharts;
+                    callbackValue = data;
+                    return;
+                }
+                var n = data.length;
+                for(i = 0; i<n; i++){
+                    if(data[i].sensorType == 1){
+                        //Temp sensor
+                        var table = new google.visualization.DataTable();
+                        table.addColumn('datetime', "Time")
+                        var columns=[];
+                        var values=[];
+                        var oldValues = [];
+                        for(j = 0; j<data[i].data.length; j++){
+                            var k = columns.indexOf(data[i].data[j].depth);
+                            if(k == -1){
+                                table.addColumn('number', data[i].data[j].depth+" meters");
+                                columns.push(data[i].data[j].depth);
+                                oldValues[data[i].data[j].depth] = Number(data[i].data[j].values[0]);
+                            }
+                        }
+                        //Each reading corresponds to one depth so we only have one value each time, but the chart api need 3 values for each time.
+                        //So this algorithm use the values of this reading as well as the las added values to the other columns
+                        for(j = 0; j<data[i].data.length; j++){
+                            values = [];
+                            values.push(new Date(data[i].data[j].time));
+                            var l = columns.indexOf(data[i].data[j].depth);
+                            for(k = 0; k<columns.length; k++){
+                                if(k == l){
+                                    values.push(Number(data[i].data[j].values[0]));
+                                    oldValues[data[i].data[j].depth] = Number(data[i].data[j].values[0]);
+                                }
+                                else{
+                                    values.push(oldValues[columns[k]]);
+                                }
+                            }
+                            table.addRow(values);
+                        }
+
+                        // Set chart options
+        				var options = {'title':'Readins for the temp sensor '+data[i].serial,
+        							   width: "100%",
+        							   height: 500,
+        							   'curveType': 'function'};
+
+                        var chart = new google.visualization.LineChart(document.getElementById('sensor-chart-'+i));
+           				chart.draw(table, options);
+
+                    }else{
+                        //Program for other sensors
+                    }
+                }
+            }
+        </script>
+
+    </body>
+
+</html>
